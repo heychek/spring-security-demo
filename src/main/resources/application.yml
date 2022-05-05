@@ -1,0 +1,19 @@
+#spring:
+#  security:
+#    user:
+#      name: test_user
+#      password: test_password
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.31.75:3307/spring-security-demo-db?useSSL=false&characterEncoding=utf-8&useUnicode=true&characterEncodeing=UTF-8&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: root
+    password: Justgo123[].
+  thymeleaf:
+    prefix: classpath:/templates/
+  mvc:
+    static-path-pattern: /static/**
+  web:
+    resources:
+      static-locations: classpath:/static
