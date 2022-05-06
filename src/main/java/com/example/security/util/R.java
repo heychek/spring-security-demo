@@ -25,31 +25,32 @@ public class R {
     R r = new R();
     r.setSuccess(true);
     r.setCode(20000);
-    r.setMessage("成功");
+    r.setMessage("访问成功");
     return r;
   }
 
-  public static R error() {
+  public static R unauth() {
     R r = new R();
     r.setSuccess(false);
     r.setCode(20001);
-    r.setMessage("失败");
+    r.setMessage("您未登录，访问失败");
     return r;
   }
 
-  public R success(Boolean success) {
-    this.setSuccess(success);
-    return this;
+  public static R authfail() {
+    R r = new R();
+    r.setSuccess(false);
+    r.setCode(20002);
+    r.setMessage("登录失败");
+    return r;
   }
 
-  public R message(String message) {
-    this.setMessage(message);
-    return this;
-  }
-
-  public R code(Integer code) {
-    this.setCode(code);
-    return this;
+  public static R accessDenied() {
+    R r = new R();
+    r.setSuccess(false);
+    r.setCode(20003);
+    r.setMessage("无权访问");
+    return r;
   }
 
   public R data(String key, Object value) {

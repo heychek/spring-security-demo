@@ -1,6 +1,6 @@
 package com.example.security.filter;
 
-import com.example.security.handler.TokenManager;
+import com.example.security.util.TokenManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,13 +22,11 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  */
 public class TokenAuthFilter extends BasicAuthenticationFilter {
 
-  private final TokenManager tokenManager;
   private final RedisTemplate<String, List<String>> redisTemplate;
 
-  public TokenAuthFilter(AuthenticationManager authenticationManager, TokenManager tokenManager,
+  public TokenAuthFilter(AuthenticationManager authenticationManager,
       RedisTemplate<String, List<String>> redisTemplate) {
     super(authenticationManager);
-    this.tokenManager = tokenManager;
     this.redisTemplate = redisTemplate;
   }
 
@@ -46,21 +44,21 @@ public class TokenAuthFilter extends BasicAuthenticationFilter {
 
   private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
     // 从 header 获取 token
-    String token = request.getHeader("token");
-    if (token != null) {
-      // 从 token 获取用户名
-      String username = tokenManager.getUserNameFromToken(token);
-      // 从 redis 获取对应权限列表
-      List<String> permissionValueList = redisTemplate.opsForValue().get(username);
-      Collection<GrantedAuthority> authority = new ArrayList<>();
-      if (permissionValueList != null) {
-        for (String permissionValue : permissionValueList) {
-          SimpleGrantedAuthority auth = new SimpleGrantedAuthority(permissionValue);
-          authority.add(auth);
-        }
-      }
-      return new UsernamePasswordAuthenticationToken(username, token, authority);
+    String token = request.getHeader("Authorization");
+    if (token == null) {
+      return null;
     }
-    return null;
+    // 从 token 获取用户名
+    String username = TokenManager.getUserNameFromToken(token);
+    // 从 redis 获取对应权限列表
+    List<String> permissionValueList = redisTemplate.opsForValue().get(username);
+    Collection<GrantedAuthority> authority = new ArrayList<>();
+    if (permissionValueList != null) {
+      for (String permissionValue : permissionValueList) {
+        SimpleGrantedAuthority auth = new SimpleGrantedAuthority(permissionValue);
+        authority.add(auth);
+      }
+    }
+    return new UsernamePasswordAuthenticationToken(username, token, authority);
   }
 }

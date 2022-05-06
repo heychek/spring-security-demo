@@ -12,11 +12,11 @@ import org.springframework.security.web.AuthenticationEntryPoint;
  *
  * @author chek
  */
-public class UnauthorizedEntryPoint implements AuthenticationEntryPoint {
+public class UnauthEntryPoint implements AuthenticationEntryPoint {
 
   @Override
   public void commence(HttpServletRequest request, HttpServletResponse response,
       AuthenticationException authException) {
-    ResponseUtils.out(response, R.error());
+    ResponseUtils.out(response, R.unauth());
   }
 }

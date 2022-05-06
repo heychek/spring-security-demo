@@ -2,10 +2,11 @@ package com.example.security.config;
 
 import com.example.security.filter.TokenAuthFilter;
 import com.example.security.filter.TokenLoginFilter;
-import com.example.security.handler.DefaultPasswordEncoder;
+import com.example.security.handler.AuthFailHandler;
+import com.example.security.handler.AuthSuccessHandler;
+import com.example.security.handler.MyAccessDeniedHandler;
 import com.example.security.handler.TokenLogoutHandler;
-import com.example.security.handler.TokenManager;
-import com.example.security.handler.UnauthorizedEntryPoint;
+import com.example.security.handler.UnauthEntryPoint;
 import com.example.security.login.LoginServiceImpl;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,9 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
 /**
@@ -29,8 +33,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
   private final LoginServiceImpl loginService;
   private final PersistentTokenRepository tokenRepository;
-  private final TokenManager tokenManager;
-  private final DefaultPasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
   private final RedisTemplate<String, List<String>> redisTemplate;
 
   /**
@@ -39,10 +42,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   protected void configure(HttpSecurity http) throws Exception {
 
+    http.sessionManagement()
+        // 使用 JWT，关闭 session
+        .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
     // 添加自己实现逻辑的登录和授权过滤器
-    http.addFilter(new TokenLoginFilter(authenticationManager(), tokenManager, redisTemplate))
-        .addFilter(new TokenAuthFilter(authenticationManager(), tokenManager, redisTemplate))
-        .httpBasic();
+    http
+        // 用重写的 Filter 替换掉原有的 UsernamePasswordAuthenticationFilter 实现使用 Json 数据也可以登陆
+        .addFilterAt(new TokenLoginFilter(authenticationManager(), redisTemplate),
+            UsernamePasswordAuthenticationFilter.class)
+        // 设置执行其他工作前的 Filter(最重要的验证 JWT)
+        .addFilterBefore(new TokenAuthFilter(authenticationManager(), redisTemplate),
+            UsernamePasswordAuthenticationFilter.class);
 
     // 开启记住我功能 http.rememberMe()
     http.rememberMe()
@@ -55,7 +66,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     http.logout()
         .logoutUrl("/logout")
         .logoutSuccessUrl("/index")
-        .addLogoutHandler(new TokenLogoutHandler(tokenManager, redisTemplate));
+        // 用户注销返回 JSON 格式数据给前端（不配置则为 html）
+        .addLogoutHandler(new TokenLogoutHandler(redisTemplate));
 
     http.formLogin()
         // 配置哪个 url 为登录页面
@@ -65,7 +77,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         // 登录成功之后跳转到哪个 url
         .successForwardUrl("/authsuccess")
         // 登录失败之后跳转到哪个 url
-        .failureForwardUrl("/unauth");
+        .failureForwardUrl("/unauth")
+        // 登录成功返回 JSON 格式数据给前端（不配置则为 html）
+        .successHandler(new AuthSuccessHandler())
+        // 登录失败返回 JSON 格式数据给前端（不配置则为 html）
+        .failureHandler(new AuthFailHandler());
 
     http.authorizeRequests()
         // 表示配置请求路径
@@ -82,12 +98,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .authenticated();
 
     http.exceptionHandling()
-        // 自定义 403 页面，这里 Demo 为了省事和登录失败用的是同一个页面
-        .accessDeniedPage("/unauth")
-        .authenticationEntryPoint(new UnauthorizedEntryPoint());
+        // 未授权返回 JSON 格式数据给前端（不配置则为 html）
+        .authenticationEntryPoint(new UnauthEntryPoint())
+        // 无权访问时返回 JSON 格式数据给前端（不配置则为 html）
+        .accessDeniedHandler(new MyAccessDeniedHandler());
 
     // 关闭 csrf
-    // http.csrf().disable();
+    http.csrf().disable();
   }
 
   /**
@@ -95,6 +112,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
    */
   @Override
   protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+    // 加入自定义的安全认证
     auth.userDetailsService(loginService).passwordEncoder(passwordEncoder);
   }
 }
