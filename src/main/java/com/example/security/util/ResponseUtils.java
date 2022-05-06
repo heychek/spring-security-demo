@@ -1,0 +1,28 @@
+package com.example.security.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+/**
+ * @author chek
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public class ResponseUtils {
+
+  public static void out(HttpServletResponse response, R r) {
+    ObjectMapper mapper = new ObjectMapper();
+    response.setStatus(HttpStatus.OK.value());
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    try {
+      mapper.writeValue(response.getWriter(), r);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+}
