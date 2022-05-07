@@ -8,6 +8,7 @@ import com.example.security.util.R;
 import com.example.security.util.ResponseUtils;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
@@ -78,7 +79,7 @@ public class TokenLoginFilter extends UsernamePasswordAuthenticationFilter {
     redisTemplate.opsForValue()
         .set(user.getUsername(), new ArrayList<>(
             user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(
-                Collectors.toList())));
+                Collectors.toList())), TokenManager.TOKEN_EXPIRATION, TimeUnit.MILLISECONDS);
     //返回token
     ResponseUtils.out(response, R.ok().data("Authorization", token));
   }

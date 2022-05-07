@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TokenManager {
 
-  private final static long TOKEN_EXPIRATION = 24 * 60 * 60 * 1000;
+  public final static long TOKEN_EXPIRATION = 24 * 60 * 60 * 1000;
   private final static String TOKEN_SIGN_KEY = "123456";
 
   public static String createToken(String username) {
